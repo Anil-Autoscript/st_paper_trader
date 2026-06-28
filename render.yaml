@@ -1,0 +1,36 @@
+# render.yaml — Render.com service definition for live_monitor.py
+#
+# Deploy steps:
+#   1. Push this repo to GitHub
+#   2. Go to render.com → New → Blueprint
+#   3. Connect your GitHub repo → Render auto-reads this file
+#   4. Add environment variables in Render dashboard (see README)
+
+services:
+  - type: worker                        # Background worker (no HTTP port needed)
+    name: st-live-monitor
+    runtime: python
+    region: singapore                   # Closest to NSE for lower latency
+    plan: starter                       # $7/month — always-on (no sleep)
+    buildCommand: pip install --pre pandas-ta && pip install -r requirements.txt --ignore-requires-python
+    startCommand: python src/live_monitor.py
+    rootDir: .
+
+    envVars:
+      - key: KITE_API_KEY
+        sync: false                     # Set manually in Render dashboard
+      - key: KITE_ACCESS_TOKEN
+        sync: false                     # Updated daily by kite_login.py
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"                      # Ensure logs stream immediately
+      - key: TZ
+        value: Asia/Kolkata
+
+    disk:
+      name: trade-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1                         # JSON files are tiny; 1 GB is ample

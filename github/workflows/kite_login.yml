@@ -1,0 +1,52 @@
+name: Kite Daily Login
+
+# Runs at 08:00 IST (02:30 UTC) every weekday to refresh the access token
+# If TOTP is configured → fully automatic
+# If not → sends login URL to Telegram for manual OTP completion
+
+on:
+  schedule:
+    - cron: "30 2 * * 1-5"      # 02:30 UTC = 08:00 IST, Mon–Fri
+
+  workflow_dispatch:
+    inputs:
+      request_token:
+        description: "Kite request_token (from redirect URL after manual OTP)"
+        required: false
+        default: ""
+
+jobs:
+  kite-login:
+    name: Refresh Kite Access Token
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pandas-ta (requires --pre for Python 3.12)
+        run: pip install --pre pandas-ta
+
+      - name: Install remaining dependencies
+        run: pip install -r requirements.txt --ignore-requires-python
+
+      - name: Refresh Kite Access Token
+        env:
+          KITE_API_KEY:         ${{ secrets.KITE_API_KEY }}
+          KITE_API_SECRET:      ${{ secrets.KITE_API_SECRET }}
+          KITE_USER_ID:         ${{ secrets.KITE_USER_ID }}
+          KITE_PASSWORD:        ${{ secrets.KITE_PASSWORD }}
+          KITE_TOTP_SECRET:     ${{ secrets.KITE_TOTP_SECRET }}
+          KITE_REQUEST_TOKEN:   ${{ github.event.inputs.request_token || '' }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_PAT:               ${{ secrets.GH_PAT }}
+          GITHUB_REPOSITORY:    ${{ github.repository }}
+        run: python src/kite_login.py
