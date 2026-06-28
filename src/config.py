@@ -5,12 +5,12 @@ All tuneable parameters live here.
 import os
 
 # ── Kite Connect ──────────────────────────────────────────────
-KITE_API_KEY       = os.environ["KITE_API_KEY"]
+KITE_API_KEY       = os.environ["q7zc55r1pftkzbc9"]
 KITE_ACCESS_TOKEN  = os.environ["KITE_ACCESS_TOKEN"]
 
 # ── Telegram ──────────────────────────────────────────────────
-TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-TELEGRAM_CHAT_ID   = os.environ["TELEGRAM_CHAT_ID"]
+TELEGRAM_BOT_TOKEN = os.environ["8240538627:AAEU2zMWicR_0k2RqnnMH1shw_-0Q3au2AI"]
+TELEGRAM_CHAT_ID   = os.environ["1020735640"]
 
 # ── Strategy Parameters ───────────────────────────────────────
 ST_LENGTH          = 80          # SuperTrend ATR length
