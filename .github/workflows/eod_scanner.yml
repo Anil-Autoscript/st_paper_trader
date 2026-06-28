@@ -1,0 +1,72 @@
+name: EOD Signal Scanner
+
+# Runs at 15:35 IST (10:05 UTC) every weekday
+# Detects new ST bearish crossover signals + checks 30-day expiries + sends Telegram report
+
+on:
+  schedule:
+    - cron: "5 10 * * 1-5"       # 10:05 UTC = 15:35 IST, Mon–Fri
+
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (no Telegram messages sent)"
+        required: false
+        default: "false"
+
+jobs:
+  eod-scan:
+    name: EOD Scanner
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore trade data cache
+        uses: actions/cache@v4
+        with:
+          path: data/
+          key: trade-data-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            trade-data-${{ runner.os }}-
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pandas-ta (requires --pre for Python 3.12)
+        run: pip install --pre pandas-ta
+
+      - name: Install remaining dependencies
+        run: pip install -r requirements.txt --ignore-requires-python
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Run EOD Scanner
+        env:
+          KITE_API_KEY:        ${{ secrets.KITE_API_KEY }}
+          KITE_ACCESS_TOKEN:   ${{ secrets.KITE_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+          DRY_RUN:             ${{ github.event.inputs.dry_run || 'false' }}
+        run: python src/eod_scanner.py
+
+      - name: Save trade data cache
+        uses: actions/cache@v4
+        if: always()
+        with:
+          path: data/
+          key: trade-data-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Upload trade data artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trade-data-${{ github.run_id }}
+          path: data/
+          retention-days: 90
